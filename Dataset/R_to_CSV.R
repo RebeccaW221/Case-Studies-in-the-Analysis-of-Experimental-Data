@@ -1,0 +1,5 @@
+library(lavaan)
+dataset_tryout <- data(FacialBurns)
+head(FacialBurns)
+save(FacialBurns, file = "C:\\Users\\wille\\OneDrive\\Documenten\\UGent\\CAED\\FacialBurns.Rdata")
+write_csv(FacialBurns, "C:\\Users\\wille\\OneDrive\\Documenten\\UGent\\CAED\\FacialBurns_allCOPY.csv")
