@@ -13,6 +13,9 @@ import numpy as np
 from matplotlib import pyplot as plt
 import seaborn as sns # for plots
 from pprint import pprint # for pretty printing
+from os import chdir, getcwd # to set the working directory DELETE AT END
+os.chdir(r'C:\Users\wille\OneDrive\Documenten\UGent\CAED\Github')
+os.getcwd()
 
 import sklearn
 from sklearn.model_selection import train_test_split
@@ -37,7 +40,7 @@ use linear regression as base model? Expect linear relationship?
 check correlation between variables, maybe ridge regression?
 
 
-# report mean of models skills scores + standard deviation or standard error of this mean
+
 # choose k value, recommended 10, (not sure about leave one out), sample must be split evenly (divisible by 77 (7 or 11))
 # structure (levels and sublevels, use lines and numbers) and comment code
 # report time to compute each step
@@ -46,7 +49,7 @@ check correlation between variables, maybe ridge regression?
 #Models
 # 1. random forest
 # 2.
-#3.
+# 3.
 
 # R² selfesteem - HADS: 4%
 # R² selfesteem - TBSA: -5%
@@ -59,16 +62,9 @@ Selfesteem - RUM: -0.467
 Selfesteem - Age: -0.0098
 Selfesteem - Sex: -0.119
 
-# correlation matrix
-burns_df.corr()
+Rum medium correlations with every var except for Age (collinearity)
 
-plt.matshow(burns_df.corr())
-plt.show()
 
-corrM = burns_df.corr()
-corrM.style.background_gradient(cmap='coolwarm')
-# 'RdBu_r' & 'BrBG' are other good diverging colormaps
-corrM # doesn't work okikkkk
 
 #Common examples of optimization algorithms include grid search and random search
 #It is common to use k=10 for the outer loop and a smaller value of k for the inner loop, such as k=3 or k=5.
@@ -84,8 +80,6 @@ corrM # doesn't work okikkkk
 Scoring metric: explained variance or mean squared error (most used)
 3 diff algorithms, each 3 diff models (diff features, diff hyperparameter tuning)
 
-#THINGS THAT DONT VARY
-#- grid search hyperparameter tuning
 
 
 #%%
@@ -101,7 +95,8 @@ Scoring metric: explained variance or mean squared error (most used)
 
 
 # load in the data set 'Facial Burns'
-burns_df = pd.read_csv(r'C:\Users\wille\OneDrive\Documenten\UGent\CAED\Dataset\FacialBurns_all.csv') #place "r" before the path string to address special character, such as '\'. Don't forget to put the file name at the end of the path + '.xlsx'
+burns_df = pd.read_csv(r'C:\Users\wille\OneDrive\Documenten\UGent\CAED\Github\Dataset\FacialBurns_all.csv') # DELETE AT END
+#burns_df = pd.read_csv(r'Dataset\FacialBurns_all.csv') 
 burns_df.head() # look at first 5 rows
 burns_df.info() # All variables have the correct scale, no null values present
 
@@ -120,11 +115,11 @@ avgValuesObj = burns_df.mean()
 print('average value in each column : ')
 print(avgValuesObj)
 
-
+# SD value per column and for each gender
 burns_df.std()
 burns_df.groupby('Sex').std()
-burns_df.GroupBy.std('Sex')
-burns_df.groupby('Sex').agg(np.std)
+
+
 # recode sex (optional)
 
 
@@ -136,6 +131,12 @@ X_list = list(X.columns) # Saving feature names for later use
 X = np.array(X) # Convert to numpy array
 y = np.array(burns_df['Selfesteem']) # Convert to numpy array
 
+X2 = burns_df.drop(['Selfesteem', 'Sex'], axis=1)  # Remove the labels from the features, all features minus target (selfesteem), axis 1 refers to the columns
+X2_list = list(X2.columns) # Saving feature names for later use
+X2 = np.array(X2) # Convert to numpy array
+
+
+
 X[:5] # check first 5 rows
 y[:5]
 
@@ -145,6 +146,17 @@ X_train, X_test, y_train, y_test = train_test_split(X, y)
 # =============================================================================
 #                      Visualizing the data
 # =============================================================================
+# Correlation matrix (heatmap)
+corr = burns_df.corr()
+sns.set(font_scale=2)
+corr_heatmap= sns.heatmap(corr, 
+                          xticklabels=corr.columns.values, yticklabels=corr.columns.values, 
+                          annot = True, annot_kws={"size": 22})
+corr_heatmap.set_title('Correlation Matrix of Facial Burns Data',fontsize = 25)
+plt.xticks(rotation=0)
+#plt.savefig('save_as_a_png.png')
+plt.show()
+
 
 # Selfesteem & HADS
 burns_df.plot(kind='scatter', x='Selfesteem', y='HADS')
@@ -345,8 +357,11 @@ print(bestscore)
 cv_outer = KFold(n_splits=10, shuffle=True, random_state=1) 
 # execute the nested cross-validation
 generalization_error = cross_val_score(grid_search_forest, X=X, y=y, cv=cv_outer, n_jobs=-1,verbose=3, scoring='neg_mean_squared_error')
+generalization_error = cross_val_score(grid_search_forest, X=X2, y=y, cv=cv_outer, n_jobs=-1,verbose=3, scoring='neg_mean_squared_error')
 #generalization_error = cross_val_score(rf_random, X=X, y=y, cv=cv_outer, n_jobs=-1,verbose=3, scoring='neg_mean_squared_error') TAKES HELLA LONG
-
+generalization_error = cross_val_score(grid_search_forest, X=X, y=y, cv=cv_outer, n_jobs=-1,verbose=3, scoring='explained_variance')
+generalization_error = cross_val_score(grid_search_forest, X=X2, y=y, cv=cv_outer, n_jobs=-1,verbose=3, scoring='explained_variance')
+generalization_error = cross_val_score(grid_search_forest, X=X3, y=y, cv=cv_outer, n_jobs=-1,verbose=3, scoring='explained_variance')
 
 
 print('test')
@@ -357,7 +372,13 @@ print('test')
 # report performance
 print('Error mean: %.3f (%.3f)' % (np.mean(generalization_error), np.std(generalization_error))) # the closer to 0 the better, higher than 1 is bad
 
+#NMSE
+# -25, SE ~ hads, rum, age, TBSA, sex
+# -25, SE ~ hads, rum, age, TBSA
 
+# Explained variance
+# 0.124 with sex
+# 0.163 without sex
 
 
 

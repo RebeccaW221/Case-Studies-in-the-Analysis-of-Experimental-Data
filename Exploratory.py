@@ -11,6 +11,8 @@ import numpy as np
 from matplotlib import pyplot as plt
 import seaborn as sns # for plots
 from pprint import pprint # for pretty printing
+import os
+os.getcwd()
 
 
 from sklearn.model_selection import train_test_split
@@ -27,7 +29,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.dummy import DummyRegressor
 
 # load in the data set 'Facial Burns'
-burns_df = pd.read_csv(r'C:\Users\wille\OneDrive\Documenten\UGent\CAED\Dataset\FacialBurns_all.csv') #place "r" before the path string to address special character, such as '\'. Don't forget to put the file name at the end of the path + '.xlsx'
+burns_df = pd.read_csv(r'C:\Users\wille\OneDrive\Documenten\UGent\CAED\Github\Dataset\FacialBurns_all.csv') #place "r" before the path string to address special character, such as '\'. Don't forget to put the file name at the end of the path + '.xlsx'
 burns_df.head() # look at first 5 rows
 
 
