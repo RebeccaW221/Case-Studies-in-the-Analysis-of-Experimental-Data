@@ -5,13 +5,17 @@ Created on Mon May 10 11:57:38 2021
 @author: wille
 """
 
-# import relevant modules
+# =============================================================================
+# # import relevant modules
+# =============================================================================
 import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
 import seaborn as sns # for plots
 from pprint import pprint # for pretty printing
 import os
+#from os import chdir, getcwd # to set the working directory DELETE AT END
+os.chdir(r'C:\Users\wille\OneDrive\Documenten\UGent\CAED\Github') # to set the working directory DELETE AT END
 os.getcwd()
 
 
@@ -27,28 +31,119 @@ from sklearn.linear_model import SGDClassifier   # classifier
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.pipeline import Pipeline
 from sklearn.dummy import DummyRegressor
+from sklearn.feature_selection import SelectKBest
+from sklearn.feature_selection import f_regression
+from sklearn.feature_selection import mutual_info_regression
+
+
+# =============================================================================
+#                     Preprocessing
+# =============================================================================
 
 # load in the data set 'Facial Burns'
 burns_df = pd.read_csv(r'C:\Users\wille\OneDrive\Documenten\UGent\CAED\Github\Dataset\FacialBurns_all.csv') #place "r" before the path string to address special character, such as '\'. Don't forget to put the file name at the end of the path + '.xlsx'
-burns_df.head() # look at first 5 rows
 
 
-# =============================================================================
-#  SEPARATE data set into response variable and feature variables
-# =============================================================================
+#------SEPARATE data set into response variable and feature variables--------#
 X = burns_df.drop('Selfesteem', axis=1)  # Remove the labels from the features, all features minus target (selfesteem), axis 1 refers to the columns
 X_list = list(X.columns) # Saving feature names for later use
 X = np.array(X) # Convert to numpy array
 y = np.array(burns_df['Selfesteem']) # Convert to numpy array
 
-X[:5] # check first 5 rows
-y[:5]
+
+#train/test split for feature selection and randomized search
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+
+# =============================================================================
+# Feature selection
+# =============================================================================
+
+#------feature selection using regression function----------------#
+
+def select_features(X_train, y_train, X_test):
+	# configure to select all features
+	fs = SelectKBest(score_func=f_regression, k='all')
+	# learn relationship from training data
+	fs.fit(X_train, y_train)
+	# transform train input data
+	X_train_fs = fs.transform(X_train)
+	# transform test input data
+	X_test_fs = fs.transform(X_test)
+	return X_train_fs, X_test_fs, fs
+ 
+
+# feature selection
+X_train_fs, X_test_fs, fs = select_features(X_train, y_train, X_test)
+# what are scores for the features
+for i in range(len(fs.scores_)):
+	print('Feature %d: %f' % (i, fs.scores_[i]))
 
 
-#train/test split for randomized search
-X_train, X_test, y_train, y_test = train_test_split(X, y)
+#%%
+# plot the scores
+brplot=plt.bar(X_list, fs.scores_)
+#brplot[0].set_color('lightblue')
+#plt.title('Feature importance scores using a linear regression function', fontsize=30)
+plt.tick_params(labelsize=25) # increase font size of ticks
+plt.xlabel('Features', fontsize=30, fontweight ='bold', labelpad=25)
+plt.ylabel('Scores', fontsize=30, fontweight ='bold',labelpad=25)
 
-# EXPLORATORY, compare grid search with randomized search
+#%%
+plt.close() # close plot (clean memory for next plot)
+
+
+#------feature selection using mutual info regression----------------#
+
+def select_features(X_train, y_train, X_test):
+	# configure to select all features
+	fs = SelectKBest(score_func=mutual_info_regression, k='all')
+	# learn relationship from training data
+	fs.fit(X_train, y_train)
+	# transform train input data
+	X_train_fs = fs.transform(X_train)
+	# transform test input data
+	X_test_fs = fs.transform(X_test)
+	return X_train_fs, X_test_fs, fs
+ 
+
+# feature selection
+X_train_fs, X_test_fs, fs = select_features(X_train, y_train, X_test)
+# what are scores for the features
+for i in range(len(fs.scores_)):
+	print('Feature %d: %f' % (i, fs.scores_[i]))
+
+#%%
+# plot the scores
+brplot=plt.bar(X_list, fs.scores_)
+#brplot[0].set_color('lightblue')
+#plt.title('Feature importance scores using a linear regression function', fontsize=30)
+plt.tick_params(labelsize=25) # increase font size of ticks
+plt.xlabel('Features', fontsize=30, fontweight ='bold', labelpad=25)
+plt.ylabel('Scores', fontsize=30, fontweight ='bold',labelpad=25)
+
+#%%
+
+#------feature selection using stepwise ----------------#
+rf = RandomForestRegressor(random_state = 42)
+
+model=rf.fit(X_train,y_train)
+def evaluate(model, X_test, y_test):
+    predictions = model.predict(X_test)
+    errors = abs(predictions - y_test)
+    mape = 100 * np.mean(errors / y_test)
+    accuracy = 100 - mape
+    print('Model Performance')
+    print('Average Error: {:0.4f} degrees.'.format(np.mean(errors)))
+    print('Accuracy = {:0.2f}%.'.format(accuracy))
+    return accuracy
+accuracy = evaluate(model, X_test, y_test) #model without hyper parameter tuning
+
+
+
+
+# =============================================================================
+# # EXPLORATORY, compare grid search with randomized search
+# =============================================================================
 rf = RandomForestRegressor(random_state = 42)
 # Look at parameters used by our current forest
 print('Parameters currently in use:\n')

@@ -7,7 +7,7 @@ Created on Tue Apr 27 12:41:52 2021
 
 #%%
 
-# import relevant modules ORGANIZE AT END, remove redundant and set everything on same line with comma
+# import relevant modules
 import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
@@ -38,6 +38,12 @@ Feature selection
 figure out how to interpret scores
 use linear regression as base model? Expect linear relationship?
 check correlation between variables, maybe ridge regression?
+outliers??
+
+AT END
+- all paths relative
+- check: names, comments, structure
+- delete unused modules, set on same line with comma
 
 
 
@@ -55,31 +61,18 @@ check correlation between variables, maybe ridge regression?
 # R² selfesteem - TBSA: -5%
 # R² selfesteem - RUM: 2%
 
-Correlations
-Selfesteem - HADS: -0.613
-Selfesteem - TBSA: -0.3845
-Selfesteem - RUM: -0.467
-Selfesteem - Age: -0.0098
-Selfesteem - Sex: -0.119
-
-Rum medium correlations with every var except for Age (collinearity)
-
-
-
-#Common examples of optimization algorithms include grid search and random search
-#It is common to use k=10 for the outer loop and a smaller value of k for the inner loop, such as k=3 or k=5.
 
 #THINGS THAT CAN VARY
 #- which model (3 models)
 #- # of folds in inner loop
 #- # of folds in outer loop
 
-#- feature selector
-# feature importance? Random forest inherently does this
 
 Scoring metric: explained variance or mean squared error (most used)
 3 diff algorithms, each 3 diff models (diff features, diff hyperparameter tuning)
 
+# Info for others
+#random_state is set to 42 so code can be reproduced
 
 
 #%%
@@ -88,17 +81,38 @@ Scoring metric: explained variance or mean squared error (most used)
 #                     Preprocessing
 # =============================================================================
 
-
-# =============================================================================
-# Feature selection ????
-# outliers??
-
-
 # load in the data set 'Facial Burns'
 burns_df = pd.read_csv(r'C:\Users\wille\OneDrive\Documenten\UGent\CAED\Github\Dataset\FacialBurns_all.csv') # DELETE AT END
 #burns_df = pd.read_csv(r'Dataset\FacialBurns_all.csv') 
 burns_df.head() # look at first 5 rows
-burns_df.info() # All variables have the correct scale, no null values present
+burns_df.info() # check variable types (correct), check null values (none present)
+
+# recode sex DUMMY? necessary for linear models but not for random forest 
+
+
+
+#------SEPARATE data set into response variable and feature variables--------#
+
+X = burns_df.drop('Selfesteem', axis=1)  # Remove the labels from the features, all features minus target (selfesteem), axis 1 refers to the columns
+X_list = list(X.columns) # Saving feature names for later use
+X = np.array(X) # Convert to numpy array
+y = np.array(burns_df['Selfesteem']) # Convert to numpy array
+
+X2 = burns_df.drop(['Selfesteem', 'Sex'], axis=1)  # Remove the labels from the features, all features minus target (selfesteem), axis 1 refers to the columns
+X2_list = list(X2.columns) # Saving feature names for later use
+X2 = np.array(X2) # Convert to numpy array
+
+
+
+X[:5] # check first 5 rows
+y[:5]
+
+#train/test split for randomized search CHECK AT ENDDDDD
+X_train, X_test, y_train, y_test = train_test_split(X, y)
+
+# =============================================================================
+#                      Exploring and visualizing the data
+# =============================================================================
 
 # Get a series containing minimum value of each column
 minValuesObj = burns_df.min()
@@ -120,32 +134,7 @@ burns_df.std()
 burns_df.groupby('Sex').std()
 
 
-# recode sex (optional)
 
-
-# =============================================================================
-#  SEPARATE data set into response variable and feature variables
-# =============================================================================
-X = burns_df.drop('Selfesteem', axis=1)  # Remove the labels from the features, all features minus target (selfesteem), axis 1 refers to the columns
-X_list = list(X.columns) # Saving feature names for later use
-X = np.array(X) # Convert to numpy array
-y = np.array(burns_df['Selfesteem']) # Convert to numpy array
-
-X2 = burns_df.drop(['Selfesteem', 'Sex'], axis=1)  # Remove the labels from the features, all features minus target (selfesteem), axis 1 refers to the columns
-X2_list = list(X2.columns) # Saving feature names for later use
-X2 = np.array(X2) # Convert to numpy array
-
-
-
-X[:5] # check first 5 rows
-y[:5]
-
-#train/test split for randomized search
-X_train, X_test, y_train, y_test = train_test_split(X, y)
-
-# =============================================================================
-#                      Visualizing the data
-# =============================================================================
 # Correlation matrix (heatmap)
 corr = burns_df.corr()
 sns.set(font_scale=2)
@@ -154,7 +143,6 @@ corr_heatmap= sns.heatmap(corr,
                           annot = True, annot_kws={"size": 22})
 corr_heatmap.set_title('Correlation Matrix of Facial Burns Data',fontsize = 25)
 plt.xticks(rotation=0)
-#plt.savefig('save_as_a_png.png')
 plt.show()
 
 
@@ -328,7 +316,9 @@ rfr.get_params().keys()
 
 
 # configure the cross-validation procedure
-cv_inner = KFold(n_splits=3, shuffle=True, random_state=1) # shuffle to rule out any biases in the order of how data was collected
+cv_inner = KFold(n_splits=3, shuffle=True, random_state=42) # shuffle to rule out any biases in the order of how data was collected
+cv_inner = KFold(n_splits=3, shuffle=False, random_state=42) # shuffle to rule out any biases in the order of how data was collected
+CHECK RANDOM STATE AND SHUFFLE reproduce code
 
 # define search
 grid_search_forest = GridSearchCV(estimator=pipeline, param_grid=par_grid, n_jobs=1, cv=cv_inner, verbose=2, scoring='neg_mean_squared_error')
@@ -354,7 +344,7 @@ bestscore = grid_search_forest.best_score_
 print(bestscore)
 
 # configure the cross-validation procedure
-cv_outer = KFold(n_splits=10, shuffle=True, random_state=1) 
+cv_outer = KFold(n_splits=10, shuffle=True, random_state=42) 
 # execute the nested cross-validation
 generalization_error = cross_val_score(grid_search_forest, X=X, y=y, cv=cv_outer, n_jobs=-1,verbose=3, scoring='neg_mean_squared_error')
 generalization_error = cross_val_score(grid_search_forest, X=X2, y=y, cv=cv_outer, n_jobs=-1,verbose=3, scoring='neg_mean_squared_error')
